@@ -1,0 +1,54 @@
+{% extends 'user_accounts/base.html' %}
+
+{% block content %}
+
+<div id='app'>
+    <h1>{{ request.user }}'s favorite movies!</h1>
+    <div v-for='movie in movies'>
+        <a href="{% url 'moviedetail' %}"><img :src="'https://image.tmdb.org/t/p/w500' + movie.poster_path" height="200px"/></a>
+        <h4>[[movie.title]]</h4>
+    </div>
+</div>
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script>
+
+let app = new Vue({
+    el: '#app',
+    delimiters: ['[[', ']]'],
+    data: {
+        myFavorites: [],
+        movies: []
+    },
+    methods: {
+        getUsersFavorites: function() {
+            axios({
+                url: '/api/v1/users/{{request.user.id}}',
+                method: 'get'
+            }).then( response => {
+                console.log(response.data)
+                this.myFavorites = response.data.favorites_set
+                this.loadAllFavorites()
+            })
+        },
+        loadAllFavorites: function() {
+            this.myFavorites.forEach(movie => {
+                axios({
+                    url: `https://api.themoviedb.org/3/movie/${movie.api_id}?api_key=fff04c5e5ae90646f4699ffeffa5f57c`,
+                    method: 'get'
+                }).then( response => {
+                    console.log(response.data)
+                    this.movies.push(response.data)
+                })
+            })
+        }
+    },
+    mounted: function() {
+        this.getUsersFavorites()
+    }
+})
+
+</script>
+
+{% endblock %}

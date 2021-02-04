@@ -1,0 +1,72 @@
+{% extends 'user_accounts/base.html' %}
+
+{% block content %}
+
+{% block script %}
+
+{% endblock %}
+{% csrf_token %}
+<div id='app'>
+    <div v-for="movie in topMovies.results">
+        <a href="{% url 'moviedetail' %}"><img :src="'https://image.tmdb.org/t/p/w500' + movie.poster_path" height="200px"/></a>
+        <h4>[[movie.title]]</h4>
+        {% if request.user.is_authenticated %}
+        <button @click='addToFavorites(movie)'>Add to favorites</button>
+        {% endif %}
+    </div>
+</div>
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script>
+
+let app = new Vue({
+    el:"#app",
+    delimiters: ['[[', ']]'],
+    data: {
+        searchTerm: '',
+        movie: {},
+        poster: '',
+        topMovies: {},
+        favoriteMovie: {}
+    },
+    csrf_token: '',
+    methods: {
+        getTopMovies: function () {
+            axios({
+                url: `https://api.themoviedb.org/3/trending/movie/week?`,
+                method: 'get',
+                params: {
+                    api_key: 'fff04c5e5ae90646f4699ffeffa5f57c'
+                }
+            }).then(response => {
+                this.topMovies = response.data
+            })
+        },
+        addToFavorites: function (movie) {
+            console.log(movie.title)
+            axios({
+                url: `api/v1/favorites/`,
+                method: 'post',
+                data: {
+                    api_id: movie.id,
+                    user: {{request.user.id}},
+                    movie_title: movie.title
+                },
+                headers: {
+                    'X-CSRFToken': this.csrf_token
+                }
+            }).then(response => {
+                movie.id = response.data
+            })
+        }
+    },
+    mounted: function() {
+        this.getTopMovies()
+        this.csrf_token = document.querySelector('input[name="csrfmiddlewaretoken"]').value
+        console.log(this.csrf_token, 'this is csrf')
+    }
+})
+
+</script>
+{% endblock %}

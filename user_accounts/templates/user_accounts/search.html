@@ -1,0 +1,75 @@
+{% extends 'user_accounts/base.html' %}
+
+{% block content %}
+
+{% block script %}
+
+{% endblock %}
+{% csrf_token %}
+<div id='app'>
+    <div class='search-box'>
+        <input placeholder="Search Movie..." type="text" class='search-bar' v-model="searchTerm" @keyup.enter="getMovie">
+    </div>
+    <div v-if="typeof movie.results != 'undefined'">
+        <div v-for="movie in movie.results">
+            <a href="{% url 'moviedetail' %}"><img :src="'https://image.tmdb.org/t/p/w500' + movie.poster_path" height="200px"/></a>
+            <h4>[[ movie.title ]]</h4>
+            {% if request.user.is_authenticated %}
+            <button @click='addToFavorites(movie)'>Add to favorites</button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script>
+
+let app = new Vue({
+    el:"#app",
+    delimiters: ['[[', ']]'],
+    data: {
+        searchTerm: '',
+        movie: {},
+        poster: '',
+        topMovies: {},
+        favoriteMovie: {}
+    },
+    csrf_token: '',
+    methods: {
+        getMovie: function () {
+            axios({
+                url: `https://api.themoviedb.org/3/search/movie?query=${this.searchTerm}&`,
+                method: 'get',
+                params: {
+                    api_key: 'fff04c5e5ae90646f4699ffeffa5f57c'
+                }
+            }).then(response => {
+                this.movie = response.data
+            })
+        },
+        addToFavorites: function (movie) {
+            console.log(movie.id)
+            axios({
+                url: `/api/v1/favorites/`,
+                method: 'post',
+                data: {
+                    api_id: movie.id,
+                    user: {{request.user.id}}
+                },
+                headers: {
+                    'X-CSRFToken': this.csrf_token
+                }
+            }).then(response => {
+                movie.id = response.data
+            })
+        }
+    },
+    mounted: function() {
+        this.csrf_token = document.querySelector('input[name="csrfmiddlewaretoken"]').value
+        console.log(this.csrf_token, 'this is csrf')
+    }
+})
+
+</script>
+{% endblock %}
